@@ -30,95 +30,9 @@ var table = new Table({
 var totalSpent = 0;
 
 //==========================================
-//	makeTable:	Form the table for display
-//==========================================
- 
-function makeTable(row) {
-  	table.push(
-	    [
-	     	row.item_id, 
-	     	row.product_name, 
-	     	row.price, 
-	     	row.stock_quantity
-	    ]
-	);
-};
-
-//==========================================
-// displayTable: display the formatted table
-//==========================================
-
-function displayTable(sql, end) {
-	connection.query(sql, function (error, results, fields) {
-		if (error) {
-			return console.log(error);
-		}
-		//	loop through the rows and fill the table
-		results.forEach(makeTable);
-		console.log("\n\n");
-		console.log(table.toString());
-		console.log("\n\n");
-		if (!end) {
-			console.log("remember: type 'exit' to end program");
-			console.log("------------------------------------\n\n");
-			action();
-		}
-	});
-};
-
-//==========================================
-//				End Program	
-//==========================================
- 
-function endProgram() {
-
-	console.log('\n\nyour total expense is: $' 
-				+ totalSpent + "\n\n");
-	setTimeout(function() {
-		sql = "SELECT * FROM products"
-		var end = true;
-		displayTable(sql, end);
-		connection.end();
-	}, 3000);
-}
-
-//==========================================
-//				Action	
-//==========================================
- 
-function placeOrder(id, qty) {
-
-	connection.query('SELECT * FROM products WHERE item_id = ?', 
-					 [id], (err, res) => {
-	        if (err) throw err;
-
-	        console.log(res);
-	        console.log(qty);
-	        let purchase = parseFloat(res[0].price);
-	        let stockQty = res[0].stock_quantity;
-
-	        if (stockQty >= qty) {
-	        	stockQty -= qty;
-
-	            connection.query('UPDATE products SET stock_quantity = ? WHERE item_id = ?', 
-	            	[stockQty, id], (err, res) => {
-	                	if (err) throw err;
-	                	//	add to total expense        	
-	                	// console.log(res);
-	                	// console.log(purchase);
-	                	// console.log(res[0].price);
-
-	        			totalSpent += (qty * purchase);
-	        			console.log(purchase);
-	        			console.log(totalSpent);
-	        			endProgram();
-	            });
-	    	};
-    });
-}
-
 //==========================================
 //				Main logic	
+//==========================================
 //==========================================
  
 connection.connect();
@@ -126,55 +40,166 @@ connection.connect();
 var sql = "SELECT * FROM products";
 
 displayTable(sql);
+
+//==========================================
+// displayTable: display the formatted table
+//==========================================
+
+function displayTable(sql, end) {
+    connection.query(sql, function (error, results, fields) {
+        if (error) {
+            return console.log(error);
+        }
+        //  loop through the rows and fill the table
+        results.forEach(makeTable);
+        console.log("\n\n");
+        console.log(table.toString());
+        console.log("\n\n");
+
+        //  after the table is displayed, we prompt
+        //  the user for action if this is not the
+        //  end of the program 
+        if (!end) {
+            action();
+        }
+    });
+};
  
-//	after the table is displayed, we prompt
-//	the user for action
+//==========================================
+//  makeTable:  Form the table for display
+//==========================================
+ 
+function makeTable(row) {
+    table.push(
+        [
+            row.item_id, 
+            row.product_name, 
+            row.price, 
+            row.stock_quantity
+        ]
+    );
+};
+
+//==========================================
+//                  ACTION
+//==========================================
+
 function action() {
 
 	inquirer
 	  .prompt([
-	    // Here we create a basic text prompt.
+	    // Here we create a prompt asking id and
+        // number of items for purchase
 	    {
 	      type: "input",
 	      message: "To place an order, please digit the item's ID",
 	      name: "productID",
-	      // validate: function(answers) {
-	      // 	if (answers !== NaN) {
-	      // 		return true;
-	      // 	}
-    	  // 	else {
-    	  // 		return console.log('please input a number for the ID');
-    	  // 	}
-    	  // }
+	      validate: function(answer) {
+	      	if (!isNaN(answer)) {
+	      		return true;
+	      	}
+    	  	else {
+    	  	return console.log('\n\n----------------------------------'
+    	  						+ '\n please input a number for the ID'
+    	  						+ '\n----------------------------------\n\n');
+    	  	}
+    	  }
 	    },    
 	    {
 	      type: "input",
 	      message: "How many items would you like to buy?",
-	      name: "orderQty"
+	      name: "orderQty",
+          validate: function(answer) {
+            if (!isNaN(answer)) {
+                return true;
+            }
+            else {
+            return console.log('\n\n----------------------------------'
+                                + '\n please input a number for the qty'
+                                + '\n----------------------------------\n\n');
+            }
+          }
     	}
 	  ])
 	  	.then(function(resp) {
-	  		var id = resp.productID;
-	  		var qty = resp.orderQty;
-	    	// If the action is 'exit' we close the inquirer
-	    	// if (id == "exit") {
-	    	// 
-	    	// }
-	    	// else {
-	    	// else if (typeof id != 'number') {
-	    	// 	console.log('Please input a number')
-	    	// 	return
-	    	// }
+	  		var id = parseInt(resp.productID);
+	  		var qty = parseInt(resp.orderQty);
 
-		   //  	connection.query(sql, function (error, results, fields) {
-					// if (error) {
-					// return console.log(error);
-					// }
-
-					//	if not, we then place the order
-					//	checking stock availability
+			//	we then place the order
+			//	checking stock availability
 			placeOrder(id, qty);
 			
 				// action();
 		});
+}
+
+//==========================================
+//              Place Order       
+//==========================================
+ 
+function placeOrder(id, qty) {
+
+    //  we query to gather the current stock quantity
+    connection.query('SELECT * FROM products WHERE item_id = ?', 
+                     [id], (err, res) => {
+            if (err) throw err;
+
+            let purchase = parseFloat(res[0].price);
+            let stockQty = res[0].stock_quantity;
+            let totalSales = res[0].product_sales;
+
+            //  if enough stock to cover the purchase,
+            //  we update the stock to reflect it,
+            //  otherwise we notify the user
+            if (stockQty >= qty) {
+                stockQty -= qty;
+                updateQty(stockQty, id, totalSales, qty, purchase)              
+            }
+            else {
+                console.log('Insufficient Quantity!');
+                action();
+            }
+    });
+}
+
+//==========================================
+//              Place Order       
+//==========================================
+ 
+function updateQty(stockQty, id, totalSales, qty, purchase) {
+    //  updating the stock quantity to reflect purchase
+    connection.query('UPDATE products SET stock_quantity = ? WHERE item_id = ?', 
+                    [stockQty, id], (err, res) => {
+                        if (err) throw err;
+                        //  add to total expense            
+
+                        totalSpent += (qty * purchase);
+                });
+
+    //  updating the total product sales to reflect 
+    //  the current purchase
+    totalSales += totalSpent;
+
+    connection.query('UPDATE products SET product_sales = ? WHERE item_id = ?', 
+                    [totalSales, id], (err, res) => {
+                        if (err) throw err;
+
+                        endProgram();
+                });
+}
+
+//==========================================
+//              End Program 
+//==========================================
+ 
+function endProgram() {
+
+    console.log('\n\nyour total expense is: $' 
+                + totalSpent + "\n\n");
+    setTimeout(function() {
+        sql = "SELECT * FROM products"
+        var end = true;
+        displayTable(sql, end);
+        connection.end();
+    }, 3000);
 }
