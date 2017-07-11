@@ -166,25 +166,24 @@ function placeOrder(id, qty) {
 //              Place Order       
 //==========================================
  
-function updateQty(stockQty, id, totalSales, qty, purchase) {
-    //  updating the stock quantity to reflect purchase
-    connection.query('UPDATE products SET stock_quantity = ? WHERE item_id = ?', 
-                    [stockQty, id], (err, res) => {
+function updateQty(stockQty, id, prodSales, qty, purchase) {
+    //  updating the stock quantity and the total  
+    //  product sales to reflect the current purchase
+
+    console.log('qty ', qty);
+    console.log('purchase ', purchase);
+    let expense = (qty * purchase);
+    prodSales += expense;
+
+    console.log('prodSales ', prodSales);
+
+    connection.query('UPDATE products SET stock_quantity = ?, ' + 
+                    "product_sales = ? " + 
+                    "WHERE item_id = ?", 
+                    [stockQty, prodSales, id], (err, res) => {
                         if (err) throw err;
-                        //  add to total expense            
 
-                        totalSpent += (qty * purchase);
-                });
-
-    //  updating the total product sales to reflect 
-    //  the current purchase
-    totalSales += totalSpent;
-
-    connection.query('UPDATE products SET product_sales = ? WHERE item_id = ?', 
-                    [totalSales, id], (err, res) => {
-                        if (err) throw err;
-
-                        endProgram();
+                        endProgram(expense);
                 });
 }
 
@@ -192,10 +191,10 @@ function updateQty(stockQty, id, totalSales, qty, purchase) {
 //              End Program 
 //==========================================
  
-function endProgram() {
+function endProgram(exp) {
 
     console.log('\n\nyour total expense is: $' 
-                + totalSpent + "\n\n");
+                + exp + "\n\n");
     setTimeout(function() {
         sql = "SELECT * FROM products"
         var end = true;
