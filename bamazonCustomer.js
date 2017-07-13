@@ -23,8 +23,8 @@ var connection = mysql.createConnection({
 //	creating the table variable for the 
 //	table template
 var table = new Table({
-    head: ['Item ID', 'Product Name', 'Price', 'Quantity'], 
-    colWidths: [10, 40, 10, 10]
+    head: ['Item ID', 'Product Name', 'Price', 'Dept.','Quantity'], 
+    colWidths: [10, 30, 10, 22, 10]
 });
 
 var totalSpent = 0;
@@ -34,34 +34,48 @@ var totalSpent = 0;
 //				Main logic	
 //==========================================
 //==========================================
- 
+
+let sql = "SELECT * FROM products";
+
+let end = false;
+
 connection.connect();
 
-var sql = "SELECT * FROM products";
-
-displayTable(sql);
+displayTable(sql, end);
 
 //==========================================
 // displayTable: display the formatted table
 //==========================================
 
 function displayTable(sql, end) {
-    connection.query(sql, function (error, results, fields) {
-        if (error) {
-            return console.log(error);
-        }
-        //  loop through the rows and fill the table
-        results.forEach(makeTable);
-        console.log("\n\n");
-        console.log(table.toString());
-        console.log("\n\n");
 
-        //  after the table is displayed, we prompt
-        //  the user for action if this is not the
-        //  end of the program 
-        if (!end) {
-            action();
-        }
+    connection.query(sql, (err, res) => {
+            if (err) throw err;
+        
+            //  loop through the rows and fill the table
+            res.forEach(makeTable);
+            console.log("\n\n");
+            console.log(table.toString());
+            console.log("\n\n");
+
+            //  we need to reinitialize the table or we get duplicates
+            //  when we display it again
+            table = new Table({
+                head: [ 'Item ID', 'Product Name', 
+                        'Price', 'Dept.','Quantity'], 
+                colWidths: [10, 30, 10, 22, 10]
+            });
+
+            //  after the table is displayed, we prompt
+            //  the user for action if this is not the
+            //  end of the program 
+            
+            if (!end) {
+                action();
+            }
+            else {
+                connection.end();
+            }
     });
 };
  
@@ -75,6 +89,7 @@ function makeTable(row) {
             row.item_id, 
             row.product_name, 
             row.price, 
+            row.department_name,
             row.stock_quantity
         ]
     );
@@ -99,9 +114,10 @@ function action() {
 	      		return true;
 	      	}
     	  	else {
-    	  	return console.log('\n\n----------------------------------'
-    	  						+ '\n please input a number for the ID'
-    	  						+ '\n----------------------------------\n\n');
+    	  	return console.log(
+                '\n\n----------------------------------'
+    	  		+ '\n please input a number for the ID'
+    	  		+ '\n----------------------------------\n\n');
     	  	}
     	  }
 	    },    
@@ -114,9 +130,10 @@ function action() {
                 return true;
             }
             else {
-            return console.log('\n\n----------------------------------'
-                                + '\n please input a number for the qty'
-                                + '\n----------------------------------\n\n');
+            return console.log(
+                '\n\n----------------------------------'
+                + '\n please input a number for the qty'
+                + '\n----------------------------------\n\n');
             }
           }
     	}
@@ -128,8 +145,6 @@ function action() {
 			//	we then place the order
 			//	checking stock availability
 			placeOrder(id, qty);
-			
-				// action();
 		});
 }
 
@@ -138,8 +153,8 @@ function action() {
 //==========================================
  
 function placeOrder(id, qty) {
-
     //  we query to gather the current stock quantity
+
     connection.query('SELECT * FROM products WHERE item_id = ?', 
                      [id], (err, res) => {
             if (err) throw err;
@@ -156,9 +171,13 @@ function placeOrder(id, qty) {
                 updateQty(stockQty, id, totalSales, qty, purchase)              
             }
             else {
-                console.log('Insufficient Quantity!');
+                console.log(
+                    '\n\n----------------------------------'
+                    + '\n     Insufficient Quantity!'
+                    + '\n----------------------------------\n\n');
                 action();
             }
+            
     });
 }
 
@@ -170,19 +189,15 @@ function updateQty(stockQty, id, prodSales, qty, purchase) {
     //  updating the stock quantity and the total  
     //  product sales to reflect the current purchase
 
-    console.log('qty ', qty);
-    console.log('purchase ', purchase);
     let expense = (qty * purchase);
     prodSales += expense;
-
-    console.log('prodSales ', prodSales);
 
     connection.query('UPDATE products SET stock_quantity = ?, ' + 
                     "product_sales = ? " + 
                     "WHERE item_id = ?", 
                     [stockQty, prodSales, id], (err, res) => {
                         if (err) throw err;
-
+ 
                         endProgram(expense);
                 });
 }
@@ -193,12 +208,13 @@ function updateQty(stockQty, id, prodSales, qty, purchase) {
  
 function endProgram(exp) {
 
-    console.log('\n\nyour total expense is: $' 
-                + exp + "\n\n");
+    console.log('\n\n----------------------------------'
+                + '\n your total expense is: $' 
+                + exp
+                + '\n----------------------------------\n\n');
     setTimeout(function() {
         sql = "SELECT * FROM products"
-        var end = true;
+        let end = true;
         displayTable(sql, end);
-        connection.end();
-    }, 3000);
+    }, 2000);
 }

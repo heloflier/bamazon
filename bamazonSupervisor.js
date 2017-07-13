@@ -30,7 +30,7 @@ var table = new Table({
     		'Sales', 
     		'Total Profit'
     	  ], 
-    colWidths: [9, 32, 12, 12, 15]
+    colWidths: [9, 32, 12, 12, 14]
 });
 
 //==========================================
@@ -75,7 +75,6 @@ function promptAction() {
 					case 'Create New Department':
 						addDept();
 			};
-			// connection.end
 		})
 }
 
@@ -84,7 +83,19 @@ function promptAction() {
 //==========================================
 
 function displayTable() {
-	let sql = "SELECT * FROM departments";
+
+	let sql = (	"SELECT departments.department_id, " +
+						"products.department_name, " +
+						"departments.overhead_costs, " +
+						"SUM(products.product_sales) " +
+							"AS 'Total_Sales', " +
+						"(departments.overhead_costs - 'Total_Sales') " +
+							"AS 'Total_Profit' " +
+				"FROM products " +
+				"INNER JOIN departments " +
+				"ON products.department_name = departments.department_name " +
+				"GROUP BY products.department_name;");
+
     connection.query(sql, function (error, results, fields) {
         if (error) {
             return console.log(error);
@@ -94,6 +105,8 @@ function displayTable() {
         console.log("\n\n");
         console.log(table.toString());
         console.log("\n\n");
+
+        connection.end();
     });
 };
  
@@ -106,7 +119,9 @@ function makeTable(row) {
         [
             row.department_id, 
             row.department_name, 
-            row.overhead_costs
+            row.overhead_costs,
+            row.Total_Sales,
+            row.Total_Profit
         ]
     );
 };
@@ -132,17 +147,16 @@ function addDept() {
 		.then(function(resp) {
 			let deptName = resp.deptName;
 			let deptCost = parseFloat(resp.deptCost);
-			console.log(deptName)
-			console.log(deptCost)
+
 			let sql = 	"INSERT INTO departments " + 
-					"(department_name, overhead_costs)" + 
-					"VALUES (?, ?);";
-			let arg = [deptName, deptCost];
+						"(department_name, overhead_costs)" + 
+						"VALUES (?, ?);";
+			let arg = 	[deptName, deptCost];
 
 			connection.query(sql, arg, (err, res) => {
+					if (err) throw err;
 
-    				if (err) throw err;
-
+    				connection.end();
     				console.log('\n\n----------------------------------'
                     + '\n     operation successful'
                     + '\n----------------------------------\n\n');		

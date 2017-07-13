@@ -83,10 +83,8 @@ function promptAction() {
 
 					case 'Add New Product':
 						addProduct();
-			};
-			connection.end
+			};		
 		})
-
 }
 
 //==========================================
@@ -103,6 +101,7 @@ function displayTable(sql) {
         console.log("\n\n");
         console.log(table.toString());
         console.log("\n\n");
+        connection.end()
     });
 };
  
@@ -144,7 +143,7 @@ function addStock() {
     	}
 	  ])
 	  	.then(function(resp) {
-
+	  		//	we query the DB to add to the inventory
 			let productID = resp.productID;
 	  		let addQty = resp.addQty;
 	  		let sql = 	"UPDATE products " + 
@@ -168,9 +167,10 @@ let isValid = (answer) => {
 	      		return true;
 	      	}
     	  	else {
-    	  	return console.log('\n\n----------------------------------'
-    	  						+ '\n     please input a number'
-    	  						+ '\n----------------------------------\n\n');
+    	  	return console.log(
+    	  		'\n\n----------------------------------'
+    	  		+ '\n     please input a number'
+    	  		+ '\n----------------------------------\n\n');
     	  	}
 }
 //==========================================
@@ -180,12 +180,14 @@ let isValid = (answer) => {
 function updateDB(sql, arg) {
 	connection.query(sql, arg, (err, res) => {
 
-    				if (err) throw err;
+		if (err) throw err;
 
-    				console.log('\n\n----------------------------------'
-                    + '\n     operation successful'
-                    + '\n----------------------------------\n\n');
-				}		
+		console.log('\n\n----------------------------------'
+        + '\n     operation successful'
+        + '\n----------------------------------\n\n');
+
+        connection.end();
+	}		
 	
 	);
 };
@@ -208,15 +210,26 @@ function addProduct() {
 				message: "please type a price",
 				name: "price",
 				validate: isValid
+			},
+			{	
+				type: "input",
+				message: "please type a department",
+				name: "dept"
 			}
 		])
 		.then(function(resp) {
+			//	we add a new product with description,
+			//	price, department,
+			//	and set the stock quantity at 0
 			let desc = resp.desc;
 	  		let price = resp.price;
-	  		let sql = 	"INSERT INTO products (product_name, price, stock_quantity)" +
-						"VALUES (?, ?, ?)";
-			let sqlarg = [desc, price, 0];
-
+	  		let dept = resp.dept;
+	  		let sql = 	"INSERT INTO products " + 
+	  					"(product_name, price, department_name, stock_quantity)" +
+						"VALUES (?, ?, ?, ?)";
+			let sqlarg = [desc, price, dept, 0];
+			// 	after setting up the variables for the query,
+			//	we call upon a generic query function
 			updateDB(sql, sqlarg);
 		});
 };
