@@ -7,10 +7,10 @@
 //==========================================
 //	 Modules, dependencies and variables
 //==========================================
-var inquirer   = require('inquirer');
-var mysql      = require('mysql');
-var Table = require('cli-table');
-var keys	   = require('./keys.js');
+var inquirer   	= require('inquirer');
+var mysql      	= require('mysql');
+var Table 		= require('cli-table');
+var keys	   	= require('./keys.js');
 
 //	object needed for the SQL connection
 var connection = mysql.createConnection({

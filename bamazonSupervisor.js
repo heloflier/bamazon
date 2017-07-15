@@ -84,17 +84,19 @@ function promptAction() {
 
 function displayTable() {
 
-	let sql = (	"SELECT departments.department_id, " +
-						"products.department_name, " +
+	let sql = ("SELECT departments.department_id, " +
+						"departments.department_name, " +
 						"departments.overhead_costs, " +
-						"SUM(products.product_sales) " +
-							"AS 'Total_Sales', " +
-						"(departments.overhead_costs - 'Total_Sales') " +
-							"AS 'Total_Profit' " +
-				"FROM products " +
-				"INNER JOIN departments " +
-				"ON products.department_name = departments.department_name " +
-				"GROUP BY products.department_name;");
+						"products.total_sales, " + 					
+						"(products.total_sales - departments.overhead_costs) " +
+							"AS 'total_profit' " +
+				"FROM departments " +
+				"JOIN " + 
+					"(SELECT department_name, " + 
+							 "SUM(product_sales) AS 'total_sales' " +
+					"FROM products " +
+					"GROUP BY department_name) products " +
+				"ON products.department_name = departments.department_name;");				
 
     connection.query(sql, function (error, results, fields) {
         if (error) {
@@ -120,8 +122,8 @@ function makeTable(row) {
             row.department_id, 
             row.department_name, 
             row.overhead_costs,
-            row.Total_Sales,
-            row.Total_Profit
+            row.total_sales,
+            row.total_profit
         ]
     );
 };
