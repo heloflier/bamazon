@@ -1,5 +1,7 @@
 # bamazon
 
+A node application to replicate a customer order and inventory process with SQL
+
 Completed 3 node modules:
 - BAMAZONCUSTOMER.JS
 - BAMAZONMANAGER.JS
